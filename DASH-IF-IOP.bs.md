@@ -138,7 +138,7 @@ Clients SHALL NOT present any samples from [=media segments=] that are entirely 
 	<figcaption>[=Media segments=] and samples need not align with [=period=] boundaries. Some samples may be entirely outside a [=period=] (marked gray) and some may overlap the [=period=] boundary (yellow).</figcaption>
 </figure>
 
-[=Media segment=] start/end points MAY be unaligned with [=period=] start/end points except when using [=simple addressing=], which requires the first [=media segment=] start point to match the [=period=] start point.
+The earliest/latest sample of a [=Media segment=] MAY be unaligned with (i.e. starts earlier/ends later than) the start/end point of a [=period=] except when using [=simple addressing=], which requires the first [=media segment=] start point to match the [=period=] start point.
 
 Note: Despite constraints on first [=media segment=] alignment, [=simple addressing=] allows the media samples within the first [=media segment=] to be unaligned with the [=period=] start point, allowing for synchronization of different reprensetations.
 
@@ -190,7 +190,7 @@ This section defines the <dfn title="addressing mode">addressing modes</dfn> tha
 
 Addressing modes not defined in this chapter SHALL NOT be used by DASH services. Clients SHOULD support all addressing modes defined in this chapter.
 
-You SHOULD choose the addressing mode based on the nature of the content:
+A service SHOULD choose the addressing mode based on the nature of the content:
 
 <dl class="switch">
 
@@ -219,17 +219,17 @@ Note: [[MPEGDASH]] makes a distinction between "segment" (HTTP-addressable entit
 	<figcaption>Indexed addressing is based on an index segment that references all [=media segments=].</figcaption>
 </figure>
 
-The MPD defines the byte range of the track file that contains the index segment. The index segment informs the client of all the [=media segments=] that exist, the time spans they cover on the [=sample timeline=] and their byte ranges.
+The period defines the byte range of the track file that contains the index segment. The index segment informs the client of all the [=media segments=] that exist, the time spans they cover on the [=sample timeline=] and their byte ranges.
 
 Multiple representations SHALL NOT be stored in the same track file.
 
-At least one `Representation/BaseURL` element SHALL be present in the MPD and SHALL contain a reference to the track file. See [[#timing-urls-and-http]] for details on URL handling.
+At least one `Representation/BaseURL` element SHALL be present in the period and SHALL contain a reference to the track file. See [[#timing-urls-and-http]] for details on URL handling.
 
-The `SegmentBase@indexRange` attribute SHALL be present in the MPD and SHALL reference the byte range of the segment index in the track file. The value SHALL be formatted as a `byte-range-spec` as defined in [[!RFC7233]], referencing a single range of bytes.
+The `SegmentBase@indexRange` attribute SHALL be present in the period and SHALL reference the byte range of the segment index in the track file. The value SHALL be formatted as a `byte-range-spec` as defined in [[!RFC7233]], referencing a single range of bytes.
 
 The `SegmentBase@timescale` attribute SHALL be present and its value SHALL match the value of the `timescale` field in the index segment.
 
-The `AdaptationSet@subsegmentStartsWithSAP` attribute SHALL be present in the MPD and SHALL have a value of `1` or `2`, depending on the sample structure of the [=media segments=].
+The `AdaptationSet@subsegmentStartsWithSAP` attribute SHALL be present in the period and SHALL have a value of `1` or `2`, depending on the sample structure of the [=media segments=].
 
 Issue: We need to clarify how to determine the right value. [#235](https://github.com/Dash-Industry-Forum/DASH-IF-IOP/issues/235)
 
