@@ -12,17 +12,17 @@ Placeholder text. This document will eventually contain IOP v5.
 
 # Timing and addressing # {#timing}
 
-This chapter describes an interoperable view of DASH presentation timing and segment addressing. This interpretation is considerably narrower than afforded by [[MPEGDASH]], constraining services to a specific set of reasonably flexible behaviors that are highly interoperable with modern client platforms. Services conforming to this document SHALL use this timing model.
+This section describes an interoperable view of DASH presentation timing and segment addressing. This interpretation is considerably narrower than afforded by [[MPEGDASH]], constraining services to a specific set of reasonably flexible behaviors that are highly interoperable with modern client platforms. Services conforming to this document SHALL use this timing model.
 
 The presentation manifest or MPD defines the <dfn>MPD timeline</dfn> which serves as the baseline for all scheduling decisions made during DASH presentation playback.
 
-The playback of a static MPD SHALL NOT depend on the mapping of the MPD timeline to real time. A client MAY play any part of the presentation at any time.
+The playback of a static MPD SHALL NOT depend on the mapping of the MPD timeline to real time meaning all media resources required for playing any part of this presentation become available to the client at the same time.
 
 The MPD timeline of a dynamic MPD SHALL have a fixed mapping to real time, with each point on the timeline corresponding to a point in real time. Clients MAY introduce an additional offset with respect to real time [[#timing-timeshift|to the extent allowed by the time shift signaling in the MPD]].
 
 Note: In addition to mapping the content to real time, [[#timing-mpd-updates|a dynamic MPD can be updated during the presentation]]. Updates may add new periods and remove or modify existing ones, though some restrictions apply. See [[#timing-mpd-updates]].
 
-The zero point in the MPD timeline of a dynamic MPD SHALL be mapped to the point in real time indicated by `MPD@availabilityStartTime`. This value SHALL NOT change between MPD updates.
+The  <dfn>zero point</dfn> in the MPD timeline of a dynamic MPD SHALL be mapped to the point in real time indicated by `MPD@availabilityStartTime`. This value SHALL NOT change between MPD updates.
 
 The ultimate purpose of the MPD is to enable the client to obtain media samples for playback. The following data structures are most relevant to locating and scheduling the samples:
 
@@ -39,7 +39,7 @@ The chapters below explore these relationships in detail.
 
 ## Periods ## {#timing-period}
 
-An MPD SHALL define an ordered list of one or more <dfn title="period">periods</dfn>. A period is both a time span on the [=MPD timeline=] and a definition of the data to be presented during the period. Period timing is relative to the zero point of the [=MPD timeline=].
+An MPD SHALL define an ordered list of one or more <dfn title="period">periods</dfn>. A period is both a time span on the [=MPD timeline=] and a definition of the data to be presented during the period. Period timing is relative to the [=zero point=] of the [=MPD timeline=].
 
 <figure>
 	<img src="Images/Timing/PeriodsMakeTheMpd.png" />
@@ -76,7 +76,7 @@ The below MPD example consists of two 20-second periods. The duration of the fir
 Parts of the MPD structure that are not relevant for this chapter have been omitted - this is not a fully functional MPD file.
 </div>
 
-In a static MPD, the first period SHALL start at the zero point of the [=MPD timeline=]. In a dynamic MPD, the first period SHALL start at or after the zero point of the [=MPD timeline=].
+In a static MPD, the first period SHALL start at the [=zero point=] of the [=MPD timeline=]. In a dynamic MPD, the first period SHALL start at or after the [=zero point=] of the [=MPD timeline=].
 
 In a static MPD, the last period SHALL have a `Period@duration`. In a dynamic MPD, the last period MAY have a `Period@duration`, in which case it is considered to have a fixed duration. If without `Period@duration`, the last period in a dynamic MPD SHALL be considered to have an unlimited duration.
 
@@ -89,7 +89,7 @@ In a dynamic MPD, `MPD@mediaPresentationDuration` SHALL be present if the follow
 1. The last period has a `Period@duration`.
 1. No new periods will be added to the MPD in the future.
 
-When present, `MPD@mediaPresentationDuration` SHALL accurately indicate the duration between the zero point on the [=MPD timeline=] and the end of the last [=period=].
+When present, `MPD@mediaPresentationDuration` SHALL accurately indicate the duration between the [=zero point=] on the [=MPD timeline=] and the end of the last [=period=].
 
 ## Representations ## {#timing-representation}
 
@@ -505,12 +505,12 @@ The following are all valid contents for such a [=media segment=]:
 * samples from 10 to 14 seconds (perfect accuracy)
 * samples from 8 to 16 seconds (maximally large segment allowed by drift tolerance, 50% increase from both ends)
 * samples from 11.9 to 12 seconds (near-minimally small segment; while drift tolerance allows 50% decrease from both ends, resulting in zero duration, every segment must still contain at least one sample)
-* samples from 8 to 12 seconds (maximal drift toward zero point at both ends)
-* samples from 12 to 16 seconds (maximal drift away from zero point at both ends)
+* samples from 8 to 12 seconds (maximal drift toward [=zero point=] at both ends)
+* samples from 12 to 16 seconds (maximal drift away from [=zero point=] at both ends)
 
 Near [=period=] boundaries, all the constraints of timing and addressing must still be respected. Consider a [=media segment=] with a nominal start time of 0 seconds from [=period=] start and a nominal duration of 4 seconds.
 
-If such a [=media segment=] contained samples from 1 to 5 seconds (drift of 1 second away from zero point at both ends, which is within acceptable limits) it would be non-conforming because of the requirement in [[#timing-mediasegment]] that the first [=media segment=] contain a media sample that starts at or overlaps the [=period=] start point.
+If such a [=media segment=] contained samples from 1 to 5 seconds (drift of 1 second away from [=zero point=] at both ends, which is within acceptable limits) it would be non-conforming because of the requirement in [[#timing-mediasegment]] that the first [=media segment=] contain a media sample that starts at or overlaps the [=period=] start point.
 </div>
 
 #### Moving the period start point (simple addressing) #### {#timing-addressing-simple-startpoint}
