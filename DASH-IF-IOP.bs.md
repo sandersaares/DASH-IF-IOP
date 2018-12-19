@@ -487,7 +487,7 @@ When using [=simple addressing=], the samples contained in a [=media segment=] M
 	<figcaption>Simple addressing relaxes the requirement on [=media segment=] contents matching the [=sample timeline=]. Red boxes indicate samples.</figcaption>
 </figure>
 
-The allowed deviation is defined as the maximum offset between the edges of the nominal time span (as defined by the MPD) and the edges of the true time span (as defined by the contents of the [=media segment=]). The deviation is evaluated separately for each edge.
+The allowed deviation is defined as the maximum offset between the segment edges of the nominal time span (as defined by the MPD) and the actual segment edges with the true time span (as defined by the contents of the [=media segment=]). The deviation is evaluated separately for each edge.
 
 Advisement: This allowed deviation does not relax any requirements that do not explicitly define an exception. For example, [=periods=] must still be covered with samples for their entire duration, which constrains the flexibility allowed for the first and last [=media segment=] in a [=period=].
 
@@ -495,7 +495,7 @@ The deviation SHALL be no more than 50% of the nominal [=media segment=] duratio
 
 Note: This results in a maximum true duration of 200% (+50% outward extension on both edges) and a minimum segment duration of 1 sample (-50% inward from both edges would result in 0 but empty segments are not allowed).
 
-Allowing inaccurate timing is intended to enable reasoning on the [=sample timeline=] using average values for [=media segment=] timing. If the addressing data says that a [=media segment=] contains 4 seconds of data on average, a client can predict with reasonable accuracy which samples are found in which [=media segments=], while at the same time the service is not required to publish per-segment timing data in the MPD. It is expected that the content is packaged with this contraint in mind (i.e. **every** segment cannot be inaccurate in the same direction - a shorter segment now implies a longer segment in the future to make up for it).
+Allowing segment duration fluctuation is intended to ease the segment generation task and simplify the signaling by a nominal duration. If the addressing data says that a [=media segment=] contains 4 seconds of data on average, a client can predict with reasonable accuracy which samples are found in which [=media segments=], while at the same time the service is not required to publish per-segment timing data in the MPD. It is expected that the content is packaged with the deviation constraint in mind (i.e. **every** segment cannot be inaccurate in the same direction - a shorter segment now implies a longer segment in the future to make up for it).
 
 <div class="example">
 Consider a [=media segment=] with a nominal start time of 10 seconds from period start and a nominal duration of 4 seconds, within a [=period=] of unlimited duration.
@@ -507,19 +507,21 @@ The following are all valid contents for such a [=media segment=]:
 * samples from 11.9 to 12 seconds (near-minimally small segment; while drift tolerance allows 50% decrease from both ends, resulting in zero duration, every segment must still contain at least one sample)
 * samples from 8 to 12 seconds (maximal drift toward [=zero point=] at both ends)
 * samples from 12 to 16 seconds (maximal drift away from [=zero point=] at both ends)
+</div>
 
+<div class="example">
 Near [=period=] boundaries, all the constraints of timing and addressing must still be respected. Consider a [=media segment=] with a nominal start time of 0 seconds from [=period=] start and a nominal duration of 4 seconds.
 
-If such a [=media segment=] contained samples from 1 to 5 seconds (drift of 1 second away from [=zero point=] at both ends, which is within acceptable limits) it would be non-conforming because of the requirement in [[#timing-mediasegment]] that the first [=media segment=] contain a media sample that starts at or overlaps the [=period=] start point.
+If such a [=media segment=] contained samples from 1 to 5 seconds (drift of 1 second away from [=zero point=] at both ends, which is within acceptable limits) it would be non-conforming because of the requirement in [[#timing-mediasegment]] that the first [=media segment=] contain a media sample must start at or overlaps the [=period=] start point.
 </div>
 
 #### Moving the period start point (simple addressing) #### {#timing-addressing-simple-startpoint}
 
 When splitting periods in two or performing other types of editorial timing adjustments, a service might want to start a period at a point after the "natural" start point of the [=representations=] within.
 
-[=Simple addressing=] is challenging to use in such scenarios. You SHOULD convert [=simple addressing=] representations to use [=explicit addressing=] before adjusting the [=period=] start point or splitting a [=period=]. See [[#timing-addressing-simple-to-explicit]].
+[=Simple addressing=] is challenging to use in such scenarios. The service SHOULD convert [=simple addressing=] representations to use [=explicit addressing=] before adjusting the [=period=] start point or splitting a [=period=]. See [[#timing-addressing-simple-to-explicit]].
 
-The rest of this chapter provides instructions for situations where you choose <em>not</em> to convert to [=explicit addressing=].
+The rest of this chapter provides instructions for situations where service chooses <em>not</em> to convert to [=explicit addressing=].
 
 To move the period start point, for [=representations=] that use [=simple addressing=]:
 
@@ -530,7 +532,7 @@ Note: If you are splitting a [=period=], also keep in mind [[#timing-mediasegmen
 
 Finding a suitable new start point that conforms to the above requirements can be very difficult. If inaccurate timing is used, it may be altogether impossible. This is a limitation of [=simple addressing=].
 
-Having ensured conformance to the above requirements for the new period start point, perform the following adjustments:
+Having ensured conformance to the above requirements for the new period start point, a service must perform the following adjustments:
 
 <div class="algorithm">
 
@@ -542,7 +544,7 @@ Having ensured conformance to the above requirements for the new period start po
 
 #### Converting simple addressing to explicit addressing #### {#timing-addressing-simple-to-explicit}
 
-Advisement: [=Simple addressing=] allows for inaccuracy in [=media segment=] timing. No inaccuracy is allowed by [=explicit addressing=]. The mechanism of conversion described here only applies when there is no inaccuracy. If the nominal time spans in original the MPD differ from the true time spans of the [=media segments=], re-package the content from scratch using [=explicit addressing=] instead of converting.
+Advisement: [=Simple addressing=] allows for inaccuracy in [=media segment=] timing. No inaccuracy is allowed by [=explicit addressing=]. The mechanism of conversion described here only applies when there is no inaccuracy in the simple addressing. If the nominal time spans in original the MPD differ from the true time spans of the [=media segments=], re-packaging of the content from scratch is needed using [=explicit addressing=] instead of converting.
 
 To perform the conversion, execute the following steps:
 
@@ -657,7 +659,7 @@ Clients SHOULD NOT present a [=media segment=] twice when it occurs on both side
 
 Clients SHOULD ensure seamless playback of period-connected [=representations=] in consecutive [=periods=].
 
-Note: The exact mechanism that ensures seamless playback depends on client capabilities and will be implementation-specific. Any shared [=media segment=] overlapping the [=period=] boundary may need to be detected and deduplicated to avoid presenting it twice.
+Note: The exact mechanism that ensures seamless playback depends on client capabilities and is implementation-specific. Any shared [=media segment=] overlapping the [=period=] boundary may need to be detected and de-duplicated to avoid presenting it twice.
 
 ### Period continuity ### {#timing-connectivity-continuity}
 
@@ -667,7 +669,7 @@ Note: The above can only be true if the sample boundary exactly matches the peri
 
 Period continuity MAY be signaled in the MPD when the above condition is met, in which case period connectivity SHALL NOT be simultaneously signaled on the same [=representation=]. Continuity implies connectivity.
 
-The signaling of period continuity is the same as for [[#timing-connectivity|period connectivity]], except that the value to use for `@schemeIdUri` is `urn:mpeg:dash:period-continuity:2015`.
+The signaling of period continuity is the same as for [[#timing-connectivity|period connectivity]], except `@schemeIdUri` value SHALL be set to `urn:mpeg:dash:period-continuity:2015`.
 
 Clients MAY take advantage of any platform-specific optimizations for seamless playback that knowledge of period continuity enables; beyond that, clients SHALL treat continuity the same as connectivity.
 
@@ -683,11 +685,11 @@ A dynamic MPD SHALL include at least one `UTCTiming` element that defines a cloc
 
 A client presenting a dynamic MPD SHALL synchronize its local clock according to the `UTCTiming` elements in the MPD and SHALL emit a warning or error to application developers when clock synchronization fails or `UTCTiming` elements are not available. A client SHALL NOT assume that clocks are synchronized using some default mechanism.
 
-Issue: Describe the relevant mechanisms.
+Issue: Describe the relevant mechanisms and link to the section listing UTCTiming valid schemes.
 
 ### Availability ### {#timing-availability}
 
-A segment is <dfn>available</dfn> if an HTTP request to acquire it can be successfully performed to completion by a client. In a dynamic MPD, new [=media segments=] continuously become available and stop being available with the passage of time.
+A segment is <dfn>available</dfn> if an HTTP request to acquire it can be successfully performed to completion by a client. In a dynamic MPD, new [=media segments=] continuously become available and may stop being available with the passage of time.
 
 The <dfn>availability window</dfn> is the time span on a [=sample timeline=] that determines which [=media segments=] are available. Each [=sample timeline=] has its own availability window.
 
@@ -707,6 +709,8 @@ The availability window is calculated as follows:
 	<img src="Images/Timing/AvailabilityWindow.png" />
 	<figcaption>The availability window determines which [=media segments=] are available, based on where their end point lies.</figcaption>
 </figure>
+
+Issue: In the above figure, representation@av.. should be changed to TotalAvailabilityTimeOffset.
 
 A service SHALL ensure that all [=media segments=] that have an <em>end point</em> inside or at the end of the availability window are available.
 
