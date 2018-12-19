@@ -778,6 +778,8 @@ Clients SHOULD use `@id` to track [=period=], [=adaptation set=] and [=represent
 
 The presence or absence of `MPD@minimumUpdatePeriod` SHALL be used to signal whether the MPD might be updated (with presence indicating potential for future updates). The value of this field indicates the maximum duration between MPD refreshes by the client. In other words, this is the validity duration of the present state of the MPD.
 
+MPD with `MPD@minimumUpdatePeriod` SHALL include valid references for every segment with starting point between <var>MPD Publish Time</var> and <var>MPD Publish Time</var> + `MPD@minimumUpdatePeriod`.  A segment is said to have valid reference if MPD describes its reference. Note that a segment may have a valid reference but not be available yet.
+
 Note: In practice, clients will also require some time to download and process an MPD update - a service should not assume perfect update timing. Conversely, a client should not assume that it can get all updates in time (it may already be attempting to buffer some [=media segments=] that were removed by an MPD update).
 
 If `MPD@minimumUpdatePeriod` is absent then `MPD@mediaPresentationDuration` SHALL be present. Both attributes MAY be present simultaneously to signal that the MPD might still receive updates but these updates will not introduce new [=periods=].
@@ -833,7 +835,7 @@ The above mechanisms can be used in any extent as long as no constraints defined
 
 Clients SHALL NOT fail catastrophically if an MPD update removes already buffered data but MAY incur unexpected time shift or a visible transition at the point of removal. It is the responsibility of the service to avoid removing data that may already be in use.
 
-In addition to editorial removal from the end of the MPD, content naturally expires due to the passage of time. Expired content also needs to be removed:
+In addition to editorial removal from the end of the MPD, content naturally expires due to the passage of time. Expired content also needs to be removed at every MPD update:
 
 * Explicitly defined [=segment references=] (`S` elements) SHALL be removed when they have expired (i.e. the [=media segment=] end point has fallen out of the [=time shift window=]).
 	* A repeating explicit [=segment reference=] (`S` element with `@r != 0`) SHALL NOT be removed until all repetitions have expired.
@@ -874,37 +876,37 @@ It may be that for various content processing workflow reasons, some tracks have
 	<figcaption>Content with different track lengths, before packaging as DASH.</figcaption>
 </figure>
 
-You now have some choices to make in how you package these tracks into a DASH presentation that conforms to this document. Specifically, there exists the requirement that every [=representation=] must cover the entire [=period=] with media samples.
+While a service has various choices for packaging these tracks into a DASH presentation, the result must conform to this document. Specifically, there exists the requirement that every [=representation=] must cover the entire [=period=] with media samples.
 
 <figure>
 	<img src="Images/Timing/NonequalLengthTracks - CutEverything.png" />
 	<figcaption>Content may be cut (indicated in black) to equalize track lengths.</figcaption>
 </figure>
 
-The simplest option is to define a single [=period=] that contains [=representations=] resulting from cutting the content to match the shortest common time span, thereby covering the entire [=period=] with samples. Depending on the nature of the data that is removed, this may or may not be acceptable.
+The simplest option is to define a single [=period=] that contains [=representations=] resulting from cutting the content to match the longest common time span, thereby covering the entire [=period=] with samples. Depending on the nature of the data that is removed, this may or may not be acceptable.
 
 <figure>
 	<img src="Images/Timing/NonequalLengthTracks - PadEverything.png" />
 	<figcaption>Content may be padded (indicated in green) to equalize track lengths.</figcaption>
 </figure>
 
-If you wish to preserve track contents in their entirety, the most interoperable option is to add padding samples (e.g. silence or black frames) to all tracks to ensure that all [=representations=] have enough data to cover the entire [=period=] with samples. This may require customization of the encoding process, as the padding must match the codec configuration of the real content and might be impractical to add after the real content has already been encoded.
+One way to preserve track contents in their entirety can be acheived by adding padding samples (e.g. silence or black frames) to all tracks to ensure that all [=representations=] have enough data to cover the entire [=period=] with samples. This may require customization of the encoding process, as the padding must match the codec configuration of the real content and might be impractical to add after the real content has already been encoded.
 
 <figure>
 	<img src="Images/Timing/NonequalLengthTracks - MakePeriods.png" />
 	<figcaption>New periods may be started at any change in the set of available tracks.</figcaption>
 </figure>
 
-Another option that preserves track contents is to [[#timing-examples-splitperiod|split the content]] into multiple [=periods=] that each contain a different set of [=representations=], starting a new [=period=] whenever a track starts or ends. This enables you to ensure every [=representations=] covers its [=period=] with samples. The upside of this approach is that it can be done easily, requiring only manipulation of the MPD. The downside is that some clients may be unable to seamlessly play across every [=period=] transition.
+Another option that preserves track contents is to [[#timing-examples-splitperiod|split the content]] into multiple [=periods=] that each contain a different set of [=representations=], starting a new [=period=] whenever a track starts or ends. This ensures every [=representations=] covers its [=period=] with samples. The upside of this approach is that it can be done easily, requiring only manipulation of the MPD. The downside is that some clients may be unable to seamlessly play across every [=period=] transition.
 
 <figure>
 	<img src="Images/Timing/NonequalLengthTracks - Mix.png" />
-	<figcaption>You may combine the different approaches, cutting in some places (black), padding in others (green) and defining multiple [=periods=] as needed.</figcaption>
+	<figcaption>The different approaches can be combined, i.e. cutting in some places (black), padding in others (green) and defining multiple [=periods=] as needed.</figcaption>
 </figure>
 
-You may wish to combine the different approaches, depending on the track, to achieve the optimal result.
+A service may combine the different approaches, depending on the track, to achieve the optimal result.
 
-Some clients are known to fail when transitioning from a period with audio and video to a period with only one of these components. You should avoid such transitions unless you have exact knowledge of the capabilities of your clients.
+Some clients are known to fail when transitioning from a period with audio and video to a period with only one of these components. Therefore, it is recommended to avoid such transitions if the content is provided to such clients.
 
 ### Split a period ### {#timing-examples-splitperiod}
 
@@ -929,10 +931,10 @@ Let's split this period at position 220. This split occurs during segment 3 for 
 
 The mechanism that enables [=period=] splitting in the middle of a segment is the following:
 
-* a [=media segment=] that overlaps a [=period=] boundary exists in both [=periods=].
+* any [=media segment=] that overlaps a [=period=] boundary exists in both [=periods=].
 * [=representations=] that are split are signaled in the MPD as [=period-connected=].
 * a representation that is [=period-connected=] with a representation in a previous period [[#timing-connectivity|is marked with the period connectivity descriptor]].
-* clients are expected to deduplicate boundary-overlapping [=media segments=] for [=representations=] on which [[#timing-connectivity|period connectivity]] is signaled, if necessary for seamless playback (implementation-specific).
+* clients are expected to de-duplicate boundary-overlapping [=media segments=] for [=representations=] on which [[#timing-connectivity|period connectivity]] is signaled, if necessary for seamless playback (implementation-specific).
 * clients are expected to present only the samples that are within the bounds of the current [=period=] (may be limited by client platform capabilities).
 
 After splitting the example presentation, we arrive at the following structure.
